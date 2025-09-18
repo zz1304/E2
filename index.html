@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词消消乐 - M1核心词</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Comic Sans MS', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #fff9c4, #ffecb3);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        /* 加载界面样式 */
+        .loader-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #fff9c4, #ffecb3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loader-logo {
+            font-size: 3.5rem;
+            color: #ff6f00;
+            text-shadow: 3px 3px 0 #ffcc80, 6px 6px 0 rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            animation: bounce 2s infinite;
+        }
+        
+        .loader-progress-container {
+            width: 80%;
+            max-width: 500px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1) inset;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .loader-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #ff6f00, #ff8f00);
+            border-radius: 15px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .loader-status {
+            color: #5d4037;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+        
+        .start-button {
+            background: linear-gradient(to right, #ff6f00, #ff8f00);
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            font-size: 1.4rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 111, 0, 0.4);
+            transition: transform 0.3s, box-shadow 0.3s;
+            font-weight: bold;
+            letter-spacing: 1px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .start-button.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .start-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(255, 111, 0, 0.6);
+        }
+        
+        /* 单词组选择界面样式 */
+        .group-selection-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #fff9c4, #ffecb3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 150;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        
+        .group-selection-screen.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .selection-container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px 30px;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .selection-title {
+            font-size: 2rem;
+            color: #ff6f00;
+            text-shadow: 2px 2px 0 #ffcc80;
+            margin-bottom: 30px;
+        }
+        
+        .group-buttons {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .group-btn {
+            background: linear-gradient(to right, #ff6f00, #ff8f00);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 111, 0, 0.4);
+            transition: transform 0.3s, box-shadow 0.3s;
+            font-weight: bold;
+        }
+        
+        .group-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(255, 111, 0, 0.6);
+        }
+        
+        .back-to-loader {
+            color: #ff6f00;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+            transition: color 0.3s;
+        }
+        
+        .back-to-loader:hover {
+            color: #e65c00;
+        }
+        
+        .decoration {
+            position: absolute;
+            z-index: -1;
+        }
+        
+        .decoration.balloon {
+            width: 40px;
+            height: 60px;
+            border-radius: 50%;
+            opacity: 0.7;
+            animation: float 8s infinite ease-in-out;
+        }
+        
+        .decoration.confetti {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: fall 10s infinite linear;
+        }
+        
+        .header {
+            text-align: center;
+            margin: 10px 0 20px;
+            width: 100%;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            color: #ff6f00;
+            text-shadow: 3px 3px 0 #ffcc80, 6px 6px 0 rgba(0,0,0,0.1);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff6f00, #ff8f00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+        
+        h1::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 6px;
+            background: linear-gradient(to right, #ff6f00, #ffcc80);
+            border-radius: 50%;
+            filter: blur(2px);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            width: 95%;
+            max-width: 800px;
+            margin-bottom: 20px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 18px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(5px);
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ff6f00;
+        }
+        
+        .info-value {
+            margin-top: 5px;
+            background: #ffcc80;
+            padding: 4px 12px;
+            border-radius: 15px;
+            min-width: 80px;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+        
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            width: 95%;
+            max-width: 800px;
+            min-height: 350px;
+            perspective: 1000px;
+            margin: 0 auto;
+        }
+        
+        .bubble {
+            width: 100%;
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
+            padding: 10px;
+            box-shadow: 
+                inset 0 -8px 15px rgba(0,0,0,0.2),
+                inset 0 8px 15px rgba(255,255,255,0.7),
+                0 10px 20px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+            animation: float 4s infinite ease-in-out;
+            will-change: transform;
+        }
+        
+        .bubble::before {
+            content: "";
+            position: absolute;
+            top: 10%;
+            left: 20%;
+            width: 25%;
+            height: 25%;
+            background: rgba(255,255,255,0.6);
+            border-radius: 50%;
+        }
+        
+        .bubble:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+        
+        .bubble.selected {
+            transform: scale(1.1);
+            box-shadow: 
+                inset 0 -8px 15px rgba(0,0,0,0.2),
+                inset 0 8px 15px rgba(255,255,255,0.7),
+                0 0 0 4px #ffeb3b,
+                0 15px 25px rgba(0,0,0,0.2);
+            animation: pulse 0.5s;
+        }
+        
+        .bubble.matched {
+            animation: pop 0.2s forwards;
+        }
+        
+        /* 匹配反馈弹窗通用样式 */
+        .feedback-toast {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 80;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        /* 成功弹窗：绿色渐变 */
+        .toast-success {
+            background: linear-gradient(135deg, #4CAF50, #8BC34A);
+            color: white;
+        }
+        
+        /* 错误弹窗：红色渐变 */
+        .toast-error {
+            background: linear-gradient(135deg, #F44336, #EF5350);
+            color: white;
+        }
+        
+        /* 鼓励弹窗：蓝色渐变 */
+        .toast-encourage {
+            background: linear-gradient(135deg, #2196F3, #03A9F4);
+            color: white;
+        }
+        
+        /* 弹窗显示动画 */
+        .feedback-toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+            animation: bounceToast 0.8s ease;
+        }
+        
+        /* 成功界面默认完全隐藏 */
+        .success-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            display: none; /* 默认完全隐藏 */
+        }
+        
+        .success-screen.show {
+            opacity: 1;
+            pointer-events: all;
+            display: flex; /* 只有显示时才可见 */
+        }
+        
+        .success-content {
+            background: linear-gradient(135deg, #fff9c4, #ffecb3);
+            padding: 30px;
+            border-radius: 25px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            transform: scale(0.8);
+            transition: transform 0.5s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .success-screen.show .success-content {
+            transform: scale(1);
+        }
+        
+        .success-content::before {
+            content: "🎉";
+            position: absolute;
+            top: -30px;
+            left: -30px;
+            font-size: 5rem;
+            opacity: 0.3;
+            z-index: -1;
+        }
+        
+        .success-content::after {
+            content: "🎂";
+            position: absolute;
+            bottom: -40px;
+            right: -40px;
+            font-size: 6rem;
+            opacity: 0.3;
+            z-index: -1;
+        }
+        
+        .success-content h2 {
+            font-size: 2.5rem;
+            color: #ff6f00;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 0 #ffcc80;
+        }
+        
+        .success-content p {
+            font-size: 1.6rem;
+            color: #5d4037;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .next-btn {
+            background: linear-gradient(to right, #ff6f00, #ff8f00);
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            font-size: 1.4rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 15px;
+            box-shadow: 0 5px 15px rgba(255, 111, 0, 0.4);
+            transition: transform 0.3s, box-shadow 0.3s;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        .next-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(255, 111, 0, 0.6);
+        }
+        
+        .next-btn:active {
+            transform: translateY(0);
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 15px;
+            padding: 12px;
+            margin-top: 20px;
+            max-width: 800px;
+            width: 95%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .instructions h3 {
+            color: #ff6f00;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+        
+        .instructions p {
+            color: #5d4037;
+            line-height: 1.5;
+            text-align: center;
+            font-size: 1rem;
+        }
+        
+        /* 背景音乐控制按钮 - 确保可见 */
+        .music-control {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            z-index: 9999; /* 提高层级确保可见 */
+            transition: all 0.3s ease;
+            display: flex; /* 强制显示 */
+        }
+        
+        .music-control:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .music-control i {
+            font-size: 1.6rem;
+            color: #ff6f00;
+        }
+        
+        /* 首次交互提示 */
+        .interaction-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 111, 0, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .interaction-prompt.show {
+            opacity: 1;
+        }
+        
+        /* 弹窗弹跳动画 */
+        @keyframes bounceToast {
+            0% { transform: translate(-50%, -20px); opacity: 0; }
+            50% { transform: translate(-50%, 5px); }
+            100% { transform: translate(-50%, 0); opacity: 1; }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1.1); }
+        }
+        
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes fall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+        
+        @media (max-width: 768px) {
+            h1, .loader-logo {
+                font-size: 2.8rem;
+            }
+            
+            .game-container {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                max-width: 500px;
+            }
+            
+            .bubble {
+                font-size: 1.3rem;
+            }
+            
+            .info-item {
+                font-size: 1.1rem;
+            }
+            
+            .info-value {
+                font-size: 1.2rem;
+                min-width: 70px;
+            }
+            
+            .feedback-toast {
+                font-size: 1.2rem;
+                padding: 10px 20px;
+            }
+            
+            .selection-title {
+                font-size: 1.8rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1, .loader-logo {
+                font-size: 2.2rem;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 8px;
+                padding: 10px;
+            }
+            
+            .info-item {
+                flex-direction: row;
+                gap: 10px;
+            }
+            
+            .info-value {
+                margin-top: 0;
+            }
+            
+            .bubble {
+                font-size: 1.1rem;
+            }
+            
+            .success-content h2 {
+                font-size: 2rem;
+            }
+            
+            .success-content p {
+                font-size: 1.4rem;
+            }
+            
+            .selection-title {
+                font-size: 1.6rem;
+            }
+            
+            .group-btn {
+                font-size: 1.1rem;
+                padding: 12px 15px;
+            }
+            
+            /* 移动设备上调整音乐按钮大小 */
+            .music-control {
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 音乐控制按钮放在最前面确保优先渲染 -->
+    <div class="music-control" id="musicControl">
+        <i class="fas fa-music"></i>
+    </div>
+    
+    <!-- 加载界面 -->
+    <div class="loader-screen" id="loaderScreen">
+        <div class="loader-logo">单词消消乐</div>
+        <div class="loader-progress-container">
+            <div class="loader-progress-bar" id="progressBar">0%</div>
+        </div>
+        <div class="loader-status" id="loadStatus">准备加载资源...</div>
+        <button class="start-button" id="startButton">开始游戏</button>
+    </div>
+    
+    <!-- 单词组选择界面（默认隐藏） -->
+    <div class="group-selection-screen" id="groupSelectionScreen">
+        <div class="selection-container">
+            <h2 class="selection-title">选择要复习的单词组</h2>
+            <div class="group-buttons" id="groupButtons">
+                <!-- 按钮将通过JS动态生成 -->
+            </div>
+            <div class="back-to-loader" id="backToLoader">返回重新加载</div>
+        </div>
+    </div>
+    
+    <!-- 首次交互提示 -->
+    <div class="interaction-prompt" id="interactionPrompt">
+        点击任意位置开始播放音乐
+    </div>
+    
+    <!-- 反馈弹窗：成功+错误+鼓励 -->
+    <div class="feedback-toast toast-success" id="successToast">匹配成功！🎉</div>
+    <div class="feedback-toast toast-error" id="errorToast">匹配错误，请重试！❌</div>
+    <div class="feedback-toast toast-encourage" id="encourageToast">太棒了！继续加油！👍</div>
+    
+    <div class="header">
+        <h1>单词消消乐</h1>
+    </div>
+    
+    <div class="game-info">
+        <div class="info-item">
+            <span>当前轮次:</span>
+            <div class="info-value" id="round">1/1</div>
+        </div>
+        <div class="info-item">
+            <span>用时:</span>
+            <div class="info-value" id="time">00:00</div>
+        </div>
+        <div class="info-item">
+            <span>匹配:</span>
+            <div class="info-value" id="matches">0/4</div>
+        </div>
+    </div>
+    
+    <div class="game-container" id="gameContainer"></div>
+    
+    <div class="success-screen" id="successScreen">
+        <div class="success-content">
+            <h2 id="successTitle">恭喜你挑战成功！</h2>
+            <p>本轮用时: <span id="finalTime">00:00</span></p>
+            <p id="roundInfo">第1轮完成</p>
+            <button class="next-btn" id="nextBtn">继续挑战</button>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h3>游戏说明</h3>
+        <p>点击两个泡泡，如果它们对应的意思互相匹配（如"balloon"和"气球"），则泡泡会消失；否则，泡泡会保持原状。点击泡泡时会播放单词发音和音效。完成后可选择继续练习该组或切换其他组！右上角按钮可控制背景音乐。</p>
+    </div>
+    
+    <!-- 音效资源 -->
+    <audio id="popSound" preload="auto">
+        <source src="assets/audio/popSound.mp3" type="audio/mpeg">
+     </audio>
+    <audio id="successSound" preload="auto">
+        <source src="assets/audio/successSound.mp3" type="audio/mpeg">
+      </audio>
+    <audio id="errorSound" preload="auto">
+        <source src="assets/audio/errorSound.mp3" type="audio/mpeg">
+      
+    <!-- 鼓励音效 -->
+    <audio id="encourageSound" preload="auto">
+        <source src="assets/audio/encourageSound.mp3" type="audio/mpeg">
+      
+    <audio id="roundCompleteSound" preload="auto">
+        <source src="assets/audio/roundCompleteSound.mp3" type="audio/mpeg">
+      
+    <audio id="allCompleteSound" preload="auto">
+        <source src="assets/audio/allCompleteSound.mp3" type="audio/mpeg">
+      
+    
+    <!-- 背景音乐 -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="assets/audio/bgMusic.mp3" type="audio/mpeg">
+      
+    
+    <!-- 单词发音音频容器（动态创建音频元素） -->
+    <div id="pronunciationContainer"></div>
+    
+    <script>
+        // 单词组数据
+        const wordGroups = [
+            {
+                groupId: 1,
+                groupName: "第一周W1",
+                pairs: [
+                    { en: "sun", cn: "太阳☀", enAudio: "assets/audio/words/sun.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "moon", cn: "月亮🌙", enAudio: "assets/audio/words/moon.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "turtle", cn: "海龟", enAudio: "assets/audio/words/turtle.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "hair", cn: "头发", enAudio: "assets/audio/words/hair.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "eye", cn: "眼睛👀", enAudio: "assets/audio/words/eye.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "mouth", cn: "嘴巴", enAudio: "assets/audio/words/mouth.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "face", cn: "脸", enAudio: "assets/audio/words/face.mp3", cnAudio: "assets/audio/words/shafa.mp3" },
+                    { en: "nose", cn: "鼻子👃", enAudio: "assets/audio/words/nose.mp3", cnAudio: "assets/audio/words/yizi.mp3" },
+                    { en: "ear", cn: "耳朵👂", enAudio: "assets/audio/words/ear.mp3", cnAudio: "assets/audio/words/zhuozi.mp3" }
+                ]
+            },
+            {
+                groupId: 2,
+                groupName: "第二周W2",
+                pairs: [
+                    { en: "alligator", cn: "鳄鱼🐊", enAudio: "assets/audio/words/alligator.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "sat", cn: "坐", enAudio: "assets/audio/words/sat.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "mat", cn: "垫子", enAudio: "assets/audio/words/mat.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "leg", cn: "腿", enAudio: "assets/audio/words/leg.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "arm", cn: "手臂", enAudio: "assets/audio/words/arm.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "shake", cn: "晃动", enAudio: "assets/audio/words/shake.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "wiggle", cn: "扭动", enAudio: "assets/audio/words/wiggle.mp3", cnAudio: "assets/audio/words/shafa.mp3" },
+                    { en: "finger", cn: "手指", enAudio: "assets/audio/words/finger.mp3", cnAudio: "assets/audio/words/yizi.mp3" },
+                    { en: "toe", cn: "脚趾", enAudio: "assets/audio/words/toe.mp3", cnAudio: "assets/audio/words/zhuozi.mp3" }
+                ]
+            },
+            {
+                groupId: 3,
+                groupName: "第三周W3",
+                pairs: [
+                    { en: "fish", cn: "鱼🐟", enAudio: "assets/audio/words/sun.mp3", cnAudio: "assets/audio/words/yu.mp3" },
+                    { en: "bear", cn: "熊🐻", enAudio: "assets/audio/words/moon.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "goat", cn: "山羊🐐", enAudio: "assets/audio/words/turtle.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "mango", cn: "芒果🥭", enAudio: "assets/audio/words/hair.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "grape", cn: "葡萄🍇", enAudio: "assets/audio/words/eye.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "peach", cn: "桃子🍑", enAudio: "assets/audio/words/mouth.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "orange", cn: "橙子🍊", enAudio: "assets/audio/words/face.mp3", cnAudio: "assets/audio/words/shafa.mp3" },
+                    { en: "pear", cn: "梨🍐", enAudio: "assets/audio/words/nose.mp3", cnAudio: "assets/audio/words/yizi.mp3" },
+                    { en: "watermelon", cn: "西瓜🍉", enAudio: "assets/audio/words/ear.mp3", cnAudio: "assets/audio/words/zhuozi.mp3" }
+                ]
+            },
+            {
+                groupId: 4,
+                groupName: "第四周W4",
+                pairs: [
+                    { en: "pizza", cn: "披萨🍕", enAudio: "assets/audio/words/pizza.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "salad", cn: "沙拉🥗", enAudio: "assets/audio/words/salad.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "pasta", cn: "意大利面🍝", enAudio: "assets/audio/words/turtle.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "fish", cn: "鱼🐟", enAudio: "assets/audio/words/fish.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "juice", cn: "果子🍹", enAudio: "assets/audio/words/juice.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "soup", cn: "汤🥘", enAudio: "assets/audio/words/soup.mp3", cnAudio: "assets/audio/words/chuanghu.mp3" },
+                    { en: "egg", cn: "鸡蛋🥚", enAudio: "assets/audio/words/egg.mp3", cnAudio: "assets/audio/words/shafa.mp3" },
+                    { en: "Meg", cn: "梅格", enAudio: "assets/audio/words/Meg.mp3", cnAudio: "assets/audio/words/yizi.mp3" },
+                    { en: "get", cn: "获取", enAudio: "assets/audio/words/get.mp3", cnAudio: "assets/audio/words/zhuozi.mp3" }
+                ]
+            }
+        ];
+        
+        // 游戏状态变量 - 重点修复游戏状态管理
+        let selectedGroupId = null;
+        let selectedBubbles = [];
+        let matchedPairs = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let currentPairs = [];
+        let currentRound = 1;
+        let totalRounds = 1;
+        let musicPlaying = false;
+        let totalTime = 0;
+        let userInteracted = false;
+        let gameStarted = false; // 游戏是否已开始的标志
+        let gameInProgress = false; // 新增：游戏是否正在进行中
+        let encouragementPlayed = {
+            2: false,
+            4: false
+        };
+        let currentPronunciationAudio = null;
+        
+        // DOM 元素
+        const gameContainer = document.getElementById('gameContainer');
+        const timeDisplay = document.getElementById('time');
+        const matchesDisplay = document.getElementById('matches');
+        const roundDisplay = document.getElementById('round');
+        const successScreen = document.getElementById('successScreen');
+        const successTitle = document.getElementById('successTitle');
+        const finalTimeDisplay = document.getElementById('finalTime');
+        const roundInfo = document.getElementById('roundInfo');
+        const nextBtn = document.getElementById('nextBtn');
+        const popSound = document.getElementById('popSound');
+        const successSound = document.getElementById('successSound');
+        const errorSound = document.getElementById('errorSound');
+        const encourageSound = document.getElementById('encourageSound');
+        const roundCompleteSound = document.getElementById('roundCompleteSound');
+        const allCompleteSound = document.getElementById('allCompleteSound');
+        const bgMusic = document.getElementById('bgMusic');
+        const musicControl = document.getElementById('musicControl');
+        const interactionPrompt = document.getElementById('interactionPrompt');
+        const successToast = document.getElementById('successToast');
+        const errorToast = document.getElementById('errorToast');
+        const encourageToast = document.getElementById('encourageToast');
+        const pronunciationContainer = document.getElementById('pronunciationContainer');
+        
+        // 加载界面元素
+        const loaderScreen = document.getElementById('loaderScreen');
+        const progressBar = document.getElementById('progressBar');
+        const loadStatus = document.getElementById('loadStatus');
+        const startButton = document.getElementById('startButton');
+        
+        // 创建派对装饰
+        function createDecorations() {
+            const colors = ['#ff6f69', '#ffcc5c', '#88d8b0', '#96ceb4', '#ffeead', '#ff6b6b'];
+            
+            // 气球装饰
+            for (let i = 0; i < 15; i++) {
+                const balloon = document.createElement('div');
+                balloon.className = 'decoration balloon';
+                balloon.style.background = `radial-gradient(circle at 30% 30%, ${colors[i % colors.length]}aa, ${colors[(i+3) % colors.length]})`;
+                balloon.style.left = `${Math.random() * 100}%`;
+                balloon.style.top = `${Math.random() * 100}%`;
+                balloon.style.animationDelay = `${Math.random() * 5}s`;
+                document.body.appendChild(balloon);
+            }
+            
+            // 彩纸装饰
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'decoration confetti';
+                confetti.style.background = colors[i % colors.length];
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.animationDelay = `${Math.random() * 5}s`;
+                confetti.style.animationDuration = `${5 + Math.random() * 10}s`;
+                document.body.appendChild(confetti);
+            }
+        }
+        
+        // 生成单词组选择按钮
+        function renderGroupButtons() {
+            const groupButtonsContainer = document.getElementById('groupButtons');
+            groupButtonsContainer.innerHTML = ''; // 清空容器
+            
+            // 遍历单词组，生成按钮
+            wordGroups.forEach(group => {
+                const btn = document.createElement('button');
+                btn.className = 'group-btn';
+                btn.textContent = group.groupName;
+                btn.dataset.groupId = group.groupId; // 绑定组ID
+                
+                // 按钮点击事件：选择组并进入游戏
+                btn.addEventListener('click', () => {
+                    userInteracted = true;
+                    hideInteractionPrompt();
+                    selectedGroupId = group.groupId; // 记录选中的组
+                    
+                    // 隐藏选择界面，初始化游戏
+                    const groupSelectionScreen = document.getElementById('groupSelectionScreen');
+                    groupSelectionScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        groupSelectionScreen.classList.remove('show');
+                        // 显示游戏相关元素
+                        document.querySelector('.header').style.display = 'block';
+                        document.querySelector('.game-info').style.display = 'flex';
+                        document.querySelector('.instructions').style.display = 'block';
+                        // 初始化游戏
+                        initGame();
+                        triggerMusicPlay();
+                    }, 500);
+                });
+                
+                groupButtonsContainer.appendChild(btn);
+            });
+            
+            // “返回加载界面”按钮事件
+            document.getElementById('backToLoader').addEventListener('click', () => {
+                const groupSelectionScreen = document.getElementById('groupSelectionScreen');
+                groupSelectionScreen.style.opacity = '0';
+                setTimeout(() => {
+                    groupSelectionScreen.classList.remove('show');
+                    loaderScreen.style.display = 'flex';
+                    loaderScreen.style.opacity = '1';
+                }, 500);
+            });
+        }
+        
+        // 播放单词发音
+        function playWordPronunciation(wordText, lang) {
+            // 停止当前正在播放的发音
+            if (currentPronunciationAudio) {
+                currentPronunciationAudio.pause();
+                currentPronunciationAudio.remove();
+                currentPronunciationAudio = null;
+            }
+            
+            // 找到当前单词对应的音频路径
+            let audioPath = '';
+            wordGroups.forEach(group => {
+                const targetWord = group.pairs.find(pair => {
+                    return (lang === 'en' && pair.en === wordText) || (lang === 'cn' && pair.cn === wordText);
+                });
+                if (targetWord) {
+                    audioPath = lang === 'en' ? targetWord.enAudio : targetWord.cnAudio;
+                }
+            });
+            
+            // 创建并播放发音音频
+            if (audioPath) {
+                const audio = document.createElement('audio');
+                audio.src = audioPath;
+                audio.preload = 'auto';
+                pronunciationContainer.appendChild(audio);
+                
+                currentPronunciationAudio = audio;
+                audio.play().catch(e => console.log(`单词发音播放失败: ${e.message}`));
+                
+                // 播放结束后清理
+                audio.onended = () => {
+                    if (currentPronunciationAudio === audio) {
+                        audio.remove();
+                        currentPronunciationAudio = null;
+                    }
+                };
+            }
+        }
+        
+        // 播放音效
+        function playSoundImmediately(audioElement) {
+            audioElement.currentTime = 0;
+            audioElement.play().catch(e => console.log(`音效播放失败: ${e.message}`));
+        }
+        
+        // 初始化游戏 - 重点修复：确保游戏状态正确初始化
+        function initGame() {
+            // 重置所有游戏状态
+            selectedBubbles = [];
+            matchedPairs = 0;
+            startTime = null;
+            gameContainer.innerHTML = '';
+            gameStarted = false;
+            gameInProgress = true; // 标记游戏正在进行
+            
+            // 隐藏成功界面（防止意外显示）
+            successScreen.classList.remove('show');
+            successScreen.style.display = 'none';
+            
+            // 更新匹配数显示
+            const totalPairsInGroup = wordGroups.find(g => g.groupId === selectedGroupId).pairs.length;
+            matchesDisplay.textContent = `0/${totalPairsInGroup}`;
+            roundDisplay.textContent = `${currentRound}/${totalRounds}`;
+            
+            // 加载用户选中组的单词对
+            currentPairs = wordGroups.find(g => g.groupId === selectedGroupId).pairs;
+            
+            // 创建泡泡（这是游戏显示的关键步骤）
+            createBubbles();
+            
+            roundInfo.textContent = `第${currentRound}轮（${wordGroups.find(g => g.groupId === selectedGroupId).groupName}）`;
+            
+            // 重置鼓励状态
+            encouragementPlayed = {
+                [Math.floor(totalPairsInGroup/2)]: false,
+                [totalPairsInGroup]: false
+            };
+            
+            // 停止任何正在播放的发音
+            if (currentPronunciationAudio) {
+                currentPronunciationAudio.pause();
+                currentPronunciationAudio.remove();
+                currentPronunciationAudio = null;
+            }
+        }
+        
+        // 创建单词泡泡 - 确保泡泡被正确创建和显示
+        function createBubbles() {
+            const allWords = [];
+            const colors = ['#ff6f69', '#ffcc5c', '#88d8b0', '#96ceb4', '#ffeead', '#ff6b6b'];
+            
+            // 生成中英文单词对数组
+            currentPairs.forEach(pair => {
+                allWords.push({ 
+                    text: pair.en, 
+                    pairId: pair.en, 
+                    lang: 'en'
+                });
+                allWords.push({ 
+                    text: pair.cn, 
+                    pairId: pair.en, 
+                    lang: 'cn'
+                });
+            });
+            
+            // 随机排序
+            shuffleArray(allWords);
+            
+            // 创建泡泡元素
+            allWords.forEach((word, index) => {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                bubble.textContent = word.text;
+                bubble.dataset.pairId = word.pairId;
+                bubble.dataset.lang = word.lang;
+                bubble.dataset.text = word.text;
+                bubble.dataset.index = index;
+                
+                // 随机颜色
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                bubble.style.background = `radial-gradient(circle at 30% 30%, ${color}bb, ${color})`;
+                bubble.style.color = '#333';
+                
+                // 点击事件
+                bubble.addEventListener('click', () => handleBubbleClick(bubble));
+                
+                // 浮动动画延迟
+                bubble.style.animationDelay = `${index * 0.1}s`;
+                
+                gameContainer.appendChild(bubble);
+            });
+        }
+        
+        // 泡泡点击处理
+        function handleBubbleClick(bubble) {
+            // 游戏未在进行中则不响应点击
+            if (!gameInProgress) return;
+            
+            // 标记游戏已开始
+            if (!gameStarted) {
+                gameStarted = true;
+            }
+            
+            // 触发音乐播放（首次交互）
+            if (!userInteracted) {
+                triggerMusicPlay();
+            }
+            
+            // 忽略已匹配或已选中的泡泡
+            if (bubble.classList.contains('matched') || bubble.classList.contains('selected') || selectedBubbles.length >= 2) {
+                return;
+            }
+            
+            // 播放单词发音
+            const wordText = bubble.dataset.text;
+            const wordLang = bubble.dataset.lang;
+            playWordPronunciation(wordText, wordLang);
+            
+            // 播放点击音效
+            playSoundImmediately(popSound);
+            
+            // 视觉反馈：选中状态
+            bubble.classList.add('selected');
+            selectedBubbles.push(bubble);
+            
+            // 开始计时（首次点击）
+            if (startTime === null) {
+                startTime = new Date();
+                startTimer();
+            }
+            
+            // 选中两个泡泡时判断匹配结果
+            if (selectedBubbles.length === 2) {
+                // 暂时禁用所有泡泡点击
+                disableAllBubbles();
+                
+                const [bubble1, bubble2] = selectedBubbles;
+                
+                // 判断是否匹配
+                if (bubble1.dataset.pairId === bubble2.dataset.pairId) {
+                    // 匹配成功
+                    showToast(successToast);
+                    playSoundImmediately(successSound);
+                    
+                    // 执行泡泡消失动画
+                    setTimeout(() => {
+                        bubble1.classList.add('matched');
+                        bubble2.classList.add('matched');
+                        bubble1.classList.remove('selected');
+                        bubble2.classList.remove('selected');
+                        selectedBubbles = [];
+                        
+                        // 更新匹配计数
+                        matchedPairs++;
+                        const totalPairsInGroup = wordGroups.find(g => g.groupId === selectedGroupId).pairs.length;
+                        matchesDisplay.textContent = `${matchedPairs}/${totalPairsInGroup}`;
+                        
+                        // 检查是否需要播放鼓励音效
+                        checkEncouragement();
+                        
+                        // 重新启用点击
+                        enableAllBubbles();
+                        
+                        // 检查是否完成本轮（只有在真正匹配完所有对时才结束）
+                        if (matchedPairs === totalPairsInGroup) {
+                            endRound();
+                        }
+                    }, 200);
+                } else {
+                    // 匹配错误
+                    showToast(errorToast);
+                    playSoundImmediately(errorSound);
+                    
+                    // 短暂延迟后取消选择状态
+                    setTimeout(() => {
+                        bubble1.classList.remove('selected');
+                        bubble2.classList.remove('selected');
+                        selectedBubbles = [];
+                        // 重新启用点击
+                        enableAllBubbles();
+                    }, 800);
+                }
+            }
+        }
+        
+        // 禁用所有未匹配泡泡的点击
+        function disableAllBubbles() {
+            const bubbles = document.querySelectorAll('.bubble:not(.matched)');
+            bubbles.forEach(bubble => {
+                bubble.style.pointerEvents = 'none';
+            });
+        }
+        
+        // 启用所有未匹配泡泡的点击
+        function enableAllBubbles() {
+            const bubbles = document.querySelectorAll('.bubble:not(.matched)');
+            bubbles.forEach(bubble => {
+                bubble.style.pointerEvents = 'auto';
+            });
+        }
+        
+        // 检查是否需要播放鼓励音效
+        function checkEncouragement() {
+            const totalPairsInGroup = wordGroups.find(g => g.groupId === selectedGroupId).pairs.length;
+            const halfPairs = Math.floor(totalPairsInGroup / 2);
+            
+            if ((matchedPairs === halfPairs && !encouragementPlayed[halfPairs])) {
+                
+                const messages = [
+                    "太棒了！继续加油！👍",
+                    "真厉害！保持势头！💪",
+                    "太优秀了！不要停！🚀",
+                    "好样的！继续前进！👏"
+                ];
+                
+                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                encourageToast.textContent = randomMessage;
+                
+                showToast(encourageToast);
+                playSoundImmediately(encourageSound);
+                
+                encouragementPlayed[halfPairs] = true;
+            }
+        }
+        
+        // 通用弹窗显示函数
+        function showToast(toastElement) {
+            successToast.classList.remove('show');
+            errorToast.classList.remove('show');
+            encourageToast.classList.remove('show');
+            
+            toastElement.classList.add('show');
+            
+            setTimeout(() => {
+                toastElement.classList.remove('show');
+            }, 1500);
+        }
+        
+        // 背景音乐控制
+        function triggerMusicPlay() {
+            if (!musicPlaying) {
+                bgMusic.play()
+                    .then(() => {
+                        musicPlaying = true;
+                        musicControl.innerHTML = '<i class="fas fa-pause"></i>';
+                        hideInteractionPrompt();
+                    })
+                    .catch(e => {
+                        console.log("音乐播放需要用户交互:", e);
+                        showInteractionPrompt();
+                    });
+            }
+        }
+        
+        // 交互提示显示/隐藏
+        function showInteractionPrompt() {
+            interactionPrompt.classList.add('show');
+            setTimeout(hideInteractionPrompt, 5000);
+        }
+        
+        function hideInteractionPrompt() {
+            interactionPrompt.classList.remove('show');
+        }
+        
+        // 计时器功能
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((new Date() - startTime) / 1000);
+                const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+                const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+                timeDisplay.textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+        
+        // 结束本轮游戏 - 重点修复：只有在游戏真正进行并完成时才调用
+        function endRound() {
+            // 确保只有在游戏进行中才执行结束逻辑
+            if (!gameInProgress) return;
+            
+            clearInterval(timerInterval);
+            const elapsedTime = Math.floor((new Date() - startTime) / 1000);
+            totalTime += elapsedTime;
+            
+            // 格式化时间显示
+            const formatTime = (timeInSeconds) => {
+                const minutes = Math.floor(timeInSeconds / 60).toString().padStart(2, '0');
+                const seconds = (timeInSeconds % 60).toString().padStart(2, '0');
+                return `${minutes}:${seconds}`;
+            };
+            
+            // 获取当前组的信息
+            const currentGroup = wordGroups.find(g => g.groupId === selectedGroupId);
+            
+            // 显示结束界面的同时播放音效
+            finalTimeDisplay.textContent = formatTime(elapsedTime);
+            if (currentRound < totalRounds) {
+                successTitle.textContent = `恭喜完成第${currentRound}轮（${currentGroup.groupName}）！`;
+                nextBtn.textContent = "继续练习该组";
+                playSoundImmediately(roundCompleteSound);
+            } else {
+                successTitle.textContent = `恭喜掌握${currentGroup.groupName}！`;
+                roundInfo.textContent = `总用时: ${formatTime(totalTime)}`;
+                nextBtn.textContent = "重新选择单词组";
+                playSoundImmediately(allCompleteSound);
+            }
+            
+            // 标记游戏不再进行中
+            gameInProgress = false;
+            
+            // 显示结束弹窗
+            setTimeout(() => {
+                successScreen.style.display = 'flex';
+                setTimeout(() => {
+                    successScreen.classList.add('show');
+                }, 100);
+            }, 500);
+        }
+        
+        // 数组随机排序
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        // 下一轮/重新选择按钮
+        nextBtn.addEventListener('click', () => {
+            userInteracted = true;
+            hideInteractionPrompt();
+            successScreen.classList.remove('show');
+            successScreen.style.display = 'none'; // 完全隐藏成功界面
+            
+            if (currentRound < totalRounds) {
+                // 同一组继续练习
+                currentRound++;
+                initGame();
+                triggerMusicPlay();
+            } else {
+                // 重置轮次，返回选择界面
+                currentRound = 1;
+                totalTime = 0;
+                gameInProgress = false;
+                const groupSelectionScreen = document.getElementById('groupSelectionScreen');
+                
+                // 隐藏游戏元素
+                document.querySelector('.header').style.display = 'none';
+                document.querySelector('.game-info').style.display = 'none';
+                document.querySelector('.instructions').style.display = 'none';
+                
+                // 显示选择界面
+                setTimeout(() => {
+                    groupSelectionScreen.style.opacity = '0';
+                    groupSelectionScreen.classList.remove('show');
+                    
+                    setTimeout(() => {
+                        renderGroupButtons();
+                        groupSelectionScreen.classList.add('show');
+                        setTimeout(() => {
+                            groupSelectionScreen.style.opacity = '1';
+                        }, 50);
+                    }, 100);
+                }, 300);
+            }
+        });
+        
+        // 背景音乐控制按钮事件
+        musicControl.addEventListener('click', () => {
+            userInteracted = true;
+            hideInteractionPrompt();
+            
+            if (musicPlaying) {
+                bgMusic.pause();
+                musicControl.innerHTML = '<i class="fas fa-music"></i>';
+            } else {
+                bgMusic.play().catch(e => {
+                    console.log("背景音乐播放失败:", e);
+                    showInteractionPrompt();
+                });
+                musicControl.innerHTML = '<i class="fas fa-pause"></i>';
+            }
+            musicPlaying = !musicPlaying;
+        });
+        
+        // 全局点击触发音乐
+        document.addEventListener('click', () => {
+            if (!musicPlaying) {
+                triggerMusicPlay();
+            }
+            userInteracted = true;
+        });
+        
+        // 触摸设备支持
+        document.addEventListener('touchstart', () => {
+            if (!userInteracted) {
+                triggerMusicPlay();
+            }
+        }, { passive: true });
+        
+        // 预加载所有单词音频
+        function preloadAllAudios() {
+            return new Promise((resolve) => {
+                // 收集所有音频路径
+                const allAudioPaths = [];
+                wordGroups.forEach(group => {
+                    group.pairs.forEach(pair => {
+                        allAudioPaths.push(pair.enAudio);
+                        allAudioPaths.push(pair.cnAudio);
+                    });
+                });
+                
+                // 添加游戏音效
+                allAudioPaths.push('assets/audio/popSound.mp3');
+                allAudioPaths.push('assets/audio/successSound.mp3');
+                allAudioPaths.push('assets/audio/errorSound.mp3');
+                allAudioPaths.push('assets/audio/encourageSound.mp3');
+                allAudioPaths.push('assets/audio/roundCompleteSound.mp3');
+                allAudioPaths.push('assets/audio/allCompleteSound.mp3');
+                allAudioPaths.push('assets/audio/bgMusic.mp3');
+                
+                const totalFiles = allAudioPaths.length;
+                let loadedFiles = 0;
+                let displayProgress = 0;
+                
+                function updateDisplayProgress() {
+                    const increment = Math.min(3, 100 - displayProgress);
+                    displayProgress += increment;
+                    progressBar.style.width = `${displayProgress}%`;
+                    progressBar.textContent = `${displayProgress}%`;
+                    
+                    if (displayProgress < 100) {
+                        setTimeout(updateDisplayProgress, 100 + Math.random() * 100);
+                    } else {
+                        setTimeout(() => {
+                            loadStatus.textContent = "资源加载完成！";
+                            startButton.classList.add('visible');
+                            resolve();
+                        }, 500);
+                    }
+                }
+                
+                updateDisplayProgress();
+                
+                // 预加载每个音频
+                allAudioPaths.forEach((path) => {
+                    const audio = new Audio();
+                    audio.src = path;
+                    
+                    const handleLoad = () => {
+                        loadedFiles++;
+                        const fileName = path.split('/').pop();
+                        loadStatus.textContent = `加载资源: ${fileName} (${loadedFiles}/${totalFiles})`;
+                    };
+                    
+                    audio.addEventListener('canplaythrough', handleLoad, { once: true });
+                    audio.addEventListener('error', () => {
+                        console.warn(`音频加载失败: ${path}`);
+                        handleLoad();
+                    }, { once: true });
+                    
+                    audio.load();
+                });
+            });
+        }
+        
+        // 开始按钮点击事件：加载界面→选择界面
+        startButton.addEventListener('click', () => {
+            // 隐藏加载界面，显示选择界面
+            loaderScreen.style.opacity = '0';
+            setTimeout(() => {
+                loaderScreen.style.display = 'none';
+                const groupSelectionScreen = document.getElementById('groupSelectionScreen');
+                groupSelectionScreen.classList.add('show');
+                renderGroupButtons();
+                
+                // 隐藏游戏元素，只在选择单词组后显示
+                document.querySelector('.header').style.display = 'none';
+                document.querySelector('.game-info').style.display = 'none';
+                document.querySelector('.instructions').style.display = 'none';
+            }, 500);
+        });
+        
+        // 页面加载初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            createDecorations();
+            
+            // 离线Font Awesome图标
+            const style = document.createElement('style');
+            style.textContent = `
+                .fas {
+                    font-family: 'Font Awesome 5 Free';
+                    font-weight: 900;
+                }
+                .fa-music:before { content: "\\f001"; }
+                .fa-pause:before { content: "\\f04c"; }
+            `;
+            document.head.appendChild(style);
+            
+            // 强制隐藏成功界面
+            document.getElementById('successScreen').classList.remove('show');
+            document.getElementById('successScreen').style.display = 'none';
+            
+            // 确保音乐控制按钮可见
+            document.getElementById('musicControl').style.display = 'flex';
+            
+            // 开始预加载所有音频
+            preloadAllAudios();
+        });
+    </script>
+</body>
+</html>
